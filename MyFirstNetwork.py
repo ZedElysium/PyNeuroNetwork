@@ -1,4 +1,5 @@
 import numpy as np
+import createDataAndPlot as cp
 
 NETWORK_SHAPE = [2, 50, 100, 50, 2]
 
@@ -6,7 +7,7 @@ NETWORK_SHAPE = [2, 50, 100, 50, 2]
 def normalize(array):
     max_number = np.max(np.absolute(array),axis=1, keepdims=True)
     # if max_number=0 ---> return 0
-    scale_rate = np.where(max_number == 0, 0, 1/max_number)
+    scale_rate = np.where(max_number == 0, 1, 1/max_number)
     norm  = array * scale_rate
     return norm 
 
@@ -16,6 +17,11 @@ def create_weights(n_inputs, n_neurons):
 
 def create_biases(n_neurons):
     return np.random.randn(n_neurons)
+
+# 分类函数
+def classify(probabilities):
+    classification = np.rint(probabilities[:,1])
+    return classification
 
 # 激活函数
 def activation_ReLU(inputs):
@@ -34,7 +40,7 @@ def activation_softmax(inputs):
 # 定义一层
 class Layer:
     def __init__(self, n_inputs, n_neurons):
-        self.weight = np.random.randn(n_inputs,n_neurons)
+        self.weights = np.random.randn(n_inputs,n_neurons)
         self.biases = np.random.randn(n_neurons)
 
     def layer_forward(self, inputs):
@@ -63,3 +69,13 @@ class Network:
                 layer_output = activation_softmax(layer_sum)
             outputs.append(layer_output)
         return outputs
+
+def main():
+    data = cp.create_data(10)
+    print(data)
+    inputs = data[:,(0,1)]
+    print(inputs)
+    network = Network(NETWORK_SHAPE)
+    network.network_forward(inputs)
+
+main()
