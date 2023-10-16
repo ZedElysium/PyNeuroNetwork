@@ -2,6 +2,7 @@ import numpy as np
 import createDataAndPlot as cp
 
 NETWORK_SHAPE = [2, 50, 100, 50, 2]
+BATCH_SIZE = 5
 
 # 标准化函数
 def normalize(array):
@@ -37,6 +38,28 @@ def activation_softmax(inputs):
 
     return norm_values
 
+# 损失函数
+def precise_loss_function(predicted, real):
+    real_matrix = np.zeros((len(real), 2))
+    real_matrix[:,1] = real
+    real_matrix[:,0] = 1 - real
+    product = np.sum(predicted*real_matrix, axis=1)
+    return 1 - product
+
+# 需求函数
+def get_final_layer_preAct_damands(predicted_values, target_vector):
+    target = np.zeros((len(target_vector),2))
+    target[:, 1] = target_vector
+    target[:, 0] = 1-target_vector
+
+    for i in range(len(target_vector)):
+        if np.dot(target[i],predicted_values[i]) > 0.5:
+            target[i] = np.array([0, 0])
+        else:
+            target[i] = (target[i] - 0.5) * 2
+    return target
+
+
 # 定义一层
 class Layer:
     def __init__(self, n_inputs, n_neurons):
@@ -47,6 +70,16 @@ class Layer:
         self.output = np.dot(inputs, self.weights) + self.biases
         # self.output = activation_ReLU(sum1)
         return self.output
+    # 调整矩阵
+    def get_weight_adjust_matrix(self, preWeights_values, aftWeights_demands):
+        plain_weights = np.full(self.weights.shape, 1)
+        weights_adjust_matrix = np.full(self.weights.shape, 0)
+        plain_weights_T = plain_weights.T
+
+        for i in range(BATCH_SIZE):
+            weights_adjust_matrix += (plain_weights_T * preWeights_values[i,:]).T * aftWeights_demands[i,:]
+        weights_adjust_matrix = weights_adjust_matrix/BATCH_SIZE
+        return weights_adjust_matrix
     
 # 定义网络类
 class Network:
