@@ -13,6 +13,13 @@ def normalize(array):
     scale_rate = np.where(max_number == 0, 1, 1/max_number)
     norm  = array * scale_rate
     return norm 
+# 向量标准化函数
+def vector_normalize(array):
+    max_number = np.max(np.absolute(array))
+    # if max_number=0 ---> return 0
+    scale_rate = np.where(max_number == 0, 1, 1/max_number)
+    norm  = array * scale_rate
+    return norm 
 
 # 权重矩阵和偏置值
 def create_weights(n_inputs, n_neurons):
@@ -127,7 +134,7 @@ class Network:
             layer = backup_network.layers[len(self.layers) - i - 1] #倒序
             if i != 0:
                 layer.biases += LEARNING_RATE * np.mean(preAct_demands, axis=0)
-                layer.biases = normalize(layer.biases)
+                layer.biases = vector_normalize(layer.biases)
             outputs = layer_outputs[len(layer_outputs) - i - 2] #再前一层
             result_list = layer.layer_backward(outputs, preAct_demands)
             preAct_demands = result_list[0]
