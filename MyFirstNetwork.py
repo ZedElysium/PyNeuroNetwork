@@ -1,8 +1,10 @@
 import numpy as np
 import createDataAndPlot as cp
+import copy
 
 NETWORK_SHAPE = [2, 50, 100, 50, 2]
 BATCH_SIZE = 5
+LEARNING_RATE = 0.01
 
 # 标准化函数
 def normalize(array):
@@ -70,10 +72,24 @@ class Layer:
         self.output = np.dot(inputs, self.weights) + self.biases
         # self.output = activation_ReLU(sum1)
         return self.output
+    
+    def layer_backward(self, preWeights_values,afterWeighs_demands):
+        preWeights_demands = np.dot(afterWeighs_demands, self.weights.T)
+
+        condition = (preWeights_values > 0)
+        value_derivatives = np.where(condition, 1, 0)
+        preActs_demands = value_derivatives * preWeights_demands
+        norm_preActs_demands = normalize(preActs_demands)
+
+        weight_adjust_matrix = self.get_weight_adjust_matrix(preWeights_values, afterWeighs_demands)
+        norm_weight_adjust_matrix = normalize(weight_adjust_matrix)
+
+        return (norm_preActs_demands, norm_weight_adjust_matrix)
+
     # 调整矩阵
     def get_weight_adjust_matrix(self, preWeights_values, aftWeights_demands):
         plain_weights = np.full(self.weights.shape, 1)
-        weights_adjust_matrix = np.full(self.weights.shape, 0)
+        weights_adjust_matrix = np.full(self.weights.shape, 0.0)
         plain_weights_T = plain_weights.T
 
         for i in range(BATCH_SIZE):
@@ -102,6 +118,26 @@ class Network:
                 layer_output = activation_softmax(layer_sum)
             outputs.append(layer_output)
         return outputs
+    
+    # 反向传播函数
+    def network_backward(self, layer_outputs, target_vector):
+        backup_network = copy.deepcopy(self)
+        preAct_demands = get_final_layer_preAct_damands(layer_outputs[-1], target_vector)
+        for i in range(len(self.layers)):
+            layer = backup_network.layers[len(self.layers) - i - 1] #倒序
+            if i != 0:
+                layer.biases += LEARNING_RATE * np.mean(preAct_demands, axis=0)
+                layer.biases = normalize(layer.biases)
+            outputs = layer_outputs[len(layer_outputs) - i - 2] #再前一层
+            result_list = layer.layer_backward(outputs, preAct_demands)
+            preAct_demands = result_list[0]
+            weights_adjust_matrix = result_list[1]
+            layer.weights += LEARNING_RATE * weights_adjust_matrix
+            layer.weights = normalize(layer.weights)
+        
+        return backup_network
+
+
 
 def main():
     data = cp.create_data(10)
