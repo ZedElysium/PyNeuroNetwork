@@ -3,8 +3,8 @@ import createDataAndPlot as cp
 import copy
 import math
 
-NETWORK_SHAPE = [2, 50, 100, 50, 2]
-BATCH_SIZE = 5
+NETWORK_SHAPE = [2, 10, 20, 15, 2]
+BATCH_SIZE = 30
 LEARNING_RATE = 0.01
 
 # 标准化函数
@@ -197,11 +197,38 @@ class Network:
 
 
 def main():
-    data = cp.create_data(10)
-    print(data)
-    inputs = data[:,(0,1)]
-    print(inputs)
-    network = Network(NETWORK_SHAPE)
-    network.network_forward(inputs)
+    global current_loss
+    data = cp.create_data(800) #生成数据
+    cp.plot_data(data, "Right classification")
+
+    #选择起始网络
+    use_this_network = 'n' #No
+    while use_this_network != 'Y' and use_this_network != 'y':
+        network = Network(NETWORK_SHAPE)
+        inputs = data[:, (0, 1)]
+        outputs = network.network_forward(inputs)
+        classification = classify(outputs[-1])
+        data[:, 2] = classification
+        cp.plot_data(data, "Choose network")
+        use_this_network = input("Use this network? Y to yes, N to No \n")
+    
+    #进行训练
+    do_train = input("Train? Y to yes, N to No \n")
+    while do_train == 'Y' or do_train == 'y' or do_train.isnumeric() == True:
+        if do_train.isnumeric() == True:
+            n_entries = int(do_train)
+        else:
+            n_entries = int(input("Enter the number of data entries used to train. \n"))
+            
+        network.train(n_entries)
+        do_train = input("Train? Y to yes, N to No \n")
+        
+    #演示训练效果
+    inputs = data[:, (0, 1)]
+    outputs = network.network_forward(inputs)
+    classification = classify(outputs[-1])
+    data[:, 2] = classification
+    cp.plot_data(data, "After training")
+    print("谢谢，再见！")
 
 main()
